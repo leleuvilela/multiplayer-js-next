@@ -1,5 +1,6 @@
 "use client";
 import { createGame } from "@/core/game";
+import { useKeyboardListener } from "@/core/keyboard-listener";
 import renderScreen from "@/core/render-screen";
 import { MutableRefObject, useEffect, useRef } from "react";
 
@@ -10,6 +11,8 @@ export interface GameProps {
 export function Game({ gameRef }: GameProps) {
   const screenRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(0);
+
+  const keyboardListener = useKeyboardListener();
 
   useEffect(() => {
     const game = gameRef.current;
@@ -30,6 +33,13 @@ export function Game({ gameRef }: GameProps) {
       return () => cancelAnimationFrame(requestRef.current);
     }
   }, [gameRef]);
+
+  useEffect(() => {
+    keyboardListener.registerPlayerId("x");
+    keyboardListener.subscribe(gameRef.current.movePlayer);
+
+    gameRef.current.start();
+  }, []);
 
   return (
     <canvas

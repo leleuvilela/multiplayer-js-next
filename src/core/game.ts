@@ -28,6 +28,11 @@ export function createGame() {
     },
   };
 
+  function start() {
+    const frequency = 2000;
+    setInterval(addFruit, frequency);
+  }
+
   function setState(newState: GameState) {
     Object.assign(state, newState);
   }
@@ -59,7 +64,7 @@ export function createGame() {
     delete state.players[playerId];
   }
 
-  function addFruit(command: {
+  function addFruit(command?: {
     fruitId: string;
     fruitX: number;
     fruitY: number;
@@ -142,5 +147,7 @@ export function createGame() {
     removePlayer,
     addFruit,
     removeFruit,
+    movePlayer,
+    start,
   };
 }
