@@ -28,8 +28,20 @@ export function createGame() {
     },
   };
 
+  const observers: Function[] = [];
+
+  function subscribe(observerFunction: Function) {
+    observers.push(observerFunction);
+  }
+
+  function notifyAll(command: Object) {
+    for (const observerFunction of observers) {
+      observerFunction(command);
+    }
+  }
+
   function start() {
-    const frequency = 2000;
+    const frequency = 10000;
     setInterval(addFruit, frequency);
   }
 
@@ -56,12 +68,24 @@ export function createGame() {
       y: playerY,
       score: 0,
     };
+
+    notifyAll({
+      type: "add-player",
+      playerId,
+      playerX,
+      playerY,
+    });
   }
 
   function removePlayer(command: { playerId: string }) {
     const { playerId } = command;
 
     delete state.players[playerId];
+
+    notifyAll({
+      type: "remove-player",
+      playerId,
+    });
   }
 
   function addFruit(command?: {
@@ -85,15 +109,31 @@ export function createGame() {
       x: fruitX,
       y: fruitY,
     };
+
+    console.log(state);
+
+    notifyAll({
+      type: "add-fruit",
+      fruitId,
+      fruitX,
+      fruitY,
+    });
   }
 
   function removeFruit(command: { fruitId: string }) {
     const { fruitId } = command;
 
     delete state.fruits[fruitId];
+
+    notifyAll({
+      type: "remove-fruit",
+      fruitId,
+    });
   }
 
   function movePlayer(command: { keyPressed: string; playerId: string }) {
+    notifyAll(command);
+
     const acceptedMoves = {
       ArrowUp(player: Player) {
         if (player.y - 1 >= 0) {
@@ -116,6 +156,8 @@ export function createGame() {
         }
       },
     };
+
+    console.log(command);
 
     const { keyPressed, playerId } = command;
     const player = state.players[playerId];
@@ -149,5 +191,7 @@ export function createGame() {
     removeFruit,
     movePlayer,
     start,
+    subscribe,
+    notifyAll,
   };
 }

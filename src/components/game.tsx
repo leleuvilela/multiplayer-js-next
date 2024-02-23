@@ -2,13 +2,15 @@
 import { createGame } from "@/core/game";
 import { useKeyboardListener } from "@/core/keyboard-listener";
 import renderScreen from "@/core/render-screen";
+import socketClient from "@/core/socket-client";
 import { MutableRefObject, useEffect, useRef } from "react";
 
 export interface GameProps {
   gameRef: MutableRefObject<ReturnType<typeof createGame>>;
+  socketRef: MutableRefObject<ReturnType<typeof socketClient>>;
 }
 
-export function Game({ gameRef }: GameProps) {
+export function Game({ gameRef, socketRef }: GameProps) {
   const screenRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(0);
 
@@ -16,29 +18,74 @@ export function Game({ gameRef }: GameProps) {
 
   useEffect(() => {
     const game = gameRef.current;
+    const io = socketRef.current;
 
-    game.addPlayer({ playerId: "x", playerY: 3, playerX: 3 });
+    io.on("connect", () => {
+      if (screenRef.current) {
+        requestRef.current = requestAnimationFrame(() =>
+          renderScreen(
+            screenRef.current!,
+            game,
+            io.id!,
+            requestAnimationFrame,
+            requestRef,
+          ),
+        );
 
-    if (screenRef.current) {
-      requestRef.current = requestAnimationFrame(() =>
-        renderScreen(
-          screenRef.current!,
-          game,
-          "currentPlayerId",
-          requestAnimationFrame,
-          requestRef,
-        ),
+        // return () => cancelAnimationFrame(requestRef.current);
+      }
+    });
+
+    io.on("setup", (state) => {
+      const playerId = io.id;
+      game.setState(state);
+
+      console.log(playerId);
+
+      keyboardListener.registerPlayerId(playerId!);
+      keyboardListener.subscribe(game.movePlayer);
+      keyboardListener.subscribe((command: any) => {
+        console.log(command);
+        io.emit("move-player", command);
+      });
+    });
+
+    io.on("add-player", (command: any) => {
+      console.log(
+        `Receibing add-player command on client: ${command.playerId}`,
       );
+      game.addPlayer(command);
+    });
 
-      return () => cancelAnimationFrame(requestRef.current);
-    }
-  }, [gameRef]);
+    io.on("remove-player", (command) => {
+      console.log(
+        `Receiving remove-player command on client: ${command.playerId}`,
+      );
+      game.removePlayer(command);
+    });
 
-  useEffect(() => {
-    keyboardListener.registerPlayerId("x");
-    keyboardListener.subscribe(gameRef.current.movePlayer);
+    io.on("move-player", (command) => {
+      console.log(
+        `Receiving move-player command on client: ${command.playerId}`,
+      );
+      const playerId = io.id;
 
-    gameRef.current.start();
+      if (playerId !== command.playerId) {
+        game.movePlayer(command);
+      }
+    });
+
+    io.on("add-fruit", (command) => {
+      console.log(`Receiving add-fruit command on client: ${command.fruitId}`);
+      game.addFruit(command);
+    });
+
+    io.on("remove-fruit", (command) => {
+      console.log(
+        `Receiving remove-fruit command on client: ${command.fruitId}`,
+      );
+      game.removeFruit(command);
+    });
   }, []);
 
   return (
