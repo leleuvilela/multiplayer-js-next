@@ -1,3 +1,4 @@
+"use client";
 interface Player {
   x: number;
   y: number;
@@ -110,8 +111,6 @@ export function createGame() {
       y: fruitY,
     };
 
-    console.log(state);
-
     notifyAll({
       type: "add-fruit",
       fruitId,
@@ -156,8 +155,6 @@ export function createGame() {
         }
       },
     };
-
-    console.log(command);
 
     const { keyPressed, playerId } = command;
     const player = state.players[playerId];

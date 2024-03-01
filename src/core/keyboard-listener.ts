@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useEffect, useState } from "react";
 
 export function useKeyboardListener() {
@@ -8,8 +9,10 @@ export function useKeyboardListener() {
     setPlayerId(playerId);
   }
 
+  console.log(observers);
+
   function subscribe(observerFunction: Function) {
-    setObservers([...observers, observerFunction]);
+    setObservers((observers) => [...observers, observerFunction]);
   }
 
   const notifyAll = useCallback(

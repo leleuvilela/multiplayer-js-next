@@ -47,9 +47,7 @@ export default function SocketHandler(
     cors: { origin: "*" },
   }).listen(PORT + 1);
 
-  console.log(res.game);
   if (!res.game) {
-    console.log("hmm");
     res.game = createGame();
     res.game.start();
 
@@ -59,16 +57,15 @@ export default function SocketHandler(
     });
   }
 
-  io.on("connection", (socket) => {
+  io.on("connect", (socket) => {
     const playerId = socket.id;
-    const _socket = socket;
     console.log("Player connected:", socket.id);
+
+    console.log(socket.conn.transport.name);
 
     res.game?.addPlayer({ playerId });
 
-    io.emit("setup", res.game?.state);
-
-    _socket.broadcast.emit("welcome", `Welcome ${_socket.id}`);
+    socket.emit("setup", res.game?.state);
 
     socket.on("disconnect", async () => {
       res.game?.removePlayer({ playerId });

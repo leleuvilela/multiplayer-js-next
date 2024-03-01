@@ -1,3 +1,4 @@
+"use client";
 import { MutableRefObject } from "react";
 import { createGame } from "./game";
 

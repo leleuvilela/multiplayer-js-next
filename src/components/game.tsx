@@ -7,7 +7,9 @@ import { MutableRefObject, useEffect, useRef } from "react";
 
 export interface GameProps {
   gameRef: MutableRefObject<ReturnType<typeof createGame>>;
-  socketRef: MutableRefObject<ReturnType<typeof socketClient>>;
+  socketRef:
+    | MutableRefObject<ReturnType<typeof socketClient>>
+    | MutableRefObject<null>;
 }
 
 export function Game({ gameRef, socketRef }: GameProps) {
@@ -17,6 +19,8 @@ export function Game({ gameRef, socketRef }: GameProps) {
   const keyboardListener = useKeyboardListener();
 
   useEffect(() => {
+    socketRef.current = socketClient();
+
     const game = gameRef.current;
     const io = socketRef.current;
 
@@ -31,8 +35,6 @@ export function Game({ gameRef, socketRef }: GameProps) {
             requestRef,
           ),
         );
-
-        // return () => cancelAnimationFrame(requestRef.current);
       }
     });
 
@@ -40,12 +42,10 @@ export function Game({ gameRef, socketRef }: GameProps) {
       const playerId = io.id;
       game.setState(state);
 
-      console.log(playerId);
-
       keyboardListener.registerPlayerId(playerId!);
       keyboardListener.subscribe(game.movePlayer);
       keyboardListener.subscribe((command: any) => {
-        console.log(command);
+        //TODO: just send if is a valid command/key
         io.emit("move-player", command);
       });
     });
@@ -65,9 +65,9 @@ export function Game({ gameRef, socketRef }: GameProps) {
     });
 
     io.on("move-player", (command) => {
-      console.log(
-        `Receiving move-player command on client: ${command.playerId}`,
-      );
+      // console.log(
+      //  `Receiving move-player command on client: ${command.playerId}`,
+      // );
       const playerId = io.id;
 
       if (playerId !== command.playerId) {
@@ -86,6 +86,12 @@ export function Game({ gameRef, socketRef }: GameProps) {
       );
       game.removeFruit(command);
     });
+
+    return () => {
+      cancelAnimationFrame(requestRef.current);
+      io.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
